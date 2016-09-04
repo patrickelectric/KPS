@@ -2,6 +2,7 @@
 
 #include <QSerialPort>
 #include <QVector>
+#include <QTimer>
 
 class  SerialLayer : public QObject
 {
@@ -9,6 +10,7 @@ Q_OBJECT
 
 private:
     QSerialPort *serial;
+    QTimer* existTimer;
 
     /**
      * @brief Read serial data
@@ -39,6 +41,13 @@ signals:
      * @param comm : Command
      */
     void receivedCommand(QByteArray comm);
+
+    /**
+     * @brief Emit signal periodicaly if command is in buffer
+     *
+     * @param comm : Command
+     */
+    void existCommand(QByteArray comm);
 public:
 
     /**
@@ -93,6 +102,19 @@ public:
      * @return bool
      */
     bool commandAvailable();
+
+    /**
+     * @brief Function to emit pushed command
+     *
+     */
+    void emitExistCommand();
+
+    /**
+     * @brief Return FIFO command from printer without remove it
+     *
+     * @return QByteArray
+     */
+    QByteArray peekCommand();
 
     /**
      * @brief Return FIFO command from printer

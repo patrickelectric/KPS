@@ -8,11 +8,15 @@ QByteArray SerialLayer::_newLineReturn = QByteArray("\n\r");
 
 SerialLayer::SerialLayer(QString port, uint baud, QWidget *parent) :
     serial(new QSerialPort()),
-    _serialOpened(false)
+    _serialOpened(false),
+    existTimer(new QTimer())
 {
     serial->setPortName(port);
     serial->setBaudRate(baud);
     _serialOpened = serial->open(QIODevice::ReadWrite);
+
+    existTimer->setInterval(1);
+    connect(existTimer, &QTimer::timeout, this, &SerialLayer::emitExistCommand);
 
     connect(serial, &QSerialPort::readyRead, this, &SerialLayer::readData);
 };
@@ -44,6 +48,11 @@ void SerialLayer::readData()
         {
             _rByteCommands.append(*i);
             emit(receivedCommand(*i));
+
+            if(!existTimer->isActive())
+            {
+                existTimer->start();
+            }
         }
         else
         {
@@ -85,6 +94,23 @@ void SerialLayer::push()
         emit(pushedCommand(comm));
     }
     _sByteCommands.clear();
+}
+
+void SerialLayer::emitExistCommand()
+{
+    if(commandAvailable())
+    {
+        emit(existCommand(peekCommand()));
+    }
+    else
+    {
+        existTimer->stop();
+    }
+}
+
+QByteArray SerialLayer::peekCommand()
+{
+    return commandAvailable() ? _rByteCommands.first() : QByteArray();
 }
 
 QByteArray SerialLayer::popCommand()
